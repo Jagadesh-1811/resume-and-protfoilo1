@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vita Forge - ATS Score Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            position: relative;
+            color: #1a1a1a;
+            padding: 20px;
+        }
+
+        /* Enhanced falling dots animation */
+        .falling-dots {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .dot {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: leftToRightFall linear infinite;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes leftToRightFall {
+            0% {
+                transform: translate(-50px, -50px) rotate(0deg);
+                opacity: 0;
+            }
+            5% {
+                opacity: 0.8;
+            }
+            95% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translate(calc(100vw + 50px), calc(100vh + 50px)) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .dot:nth-child(1) { left: -10%; animation: leftToRightFall 15s linear infinite 0s; width: 8px; height: 8px; background: #1a1a1a; }
+        .dot:nth-child(2) { left: -15%; animation: leftToRightFall 18s linear infinite 3s; width: 12px; height: 12px; background: #2a2a2a; }
+        .dot:nth-child(3) { left: -20%; animation: leftToRightFall 12s linear infinite 6s; width: 6px; height: 6px; background: #0a0a0a; }
+        .dot:nth-child(4) { left: -25%; animation: leftToRightFall 20s linear infinite 2s; width: 10px; height: 10px; background: #3a3a3a; }
+        .dot:nth-child(5) { left: -30%; animation: leftToRightFall 16s linear infinite 8s; width: 14px; height: 14px; background: #1a1a1a; }
+
+        .dashboard-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+            backdrop-filter: blur(3px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dashboard-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .dashboard-title {
+            color: #1a1a1a;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .dashboard-subtitle {
+            color: #333333;
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            border: 2px dashed rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #1a1a1a;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .file-input-btn {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-input-btn:hover {
+            background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-info {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid #1a1a1a;
+            text-align: left;
+            display: none;
+        }
+
+        .error-message {
+            background: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            color: #c0392b;
+            display: none;
+        }
+
+        .processing-message {
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            color: #2980b9;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1a1a1a, #2a2a2a);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .analysis-section {
+            display: none;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .card h3 {
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            font-size: 18px;
+            border-bottom: 2px solid #1a1a1a;
+            padding-bottom: 8px;
+        }
+
+        .score-display {
+            grid-column: 1 / -1;
+            text-align: center;
+        }
+
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: white;
+            position: relative;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .score-high { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .score-medium { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .score-low { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+        .keywords-list, .grammar-list, .recommendations-list {
+            list-style: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .keywords-list li, .grammar-list li, .recommendations-list li {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 4px solid #1a1a1a;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .keywords-list li:hover, .grammar-list li:hover, .recommendations-list li:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateX(5px);
+        }
+
+        .keyword-found {
+            border-left-color: #27ae60 !important;
+            background: rgba(39, 174, 96, 0.1) !important;
+        }
+
+        .keyword-missing {
+            border-left-color: #e74c3c !important;
+            background: rgba(231, 76, 60, 0.1) !important;
+        }
+
+        .grammar-error {
+            border-left-color: #e74c3c !important;
+            background: rgba(231, 76, 60, 0.1) !important;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #1a1a1a;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        .tag-positive { background: #27ae60; }
+        .tag-negative { background: #e74c3c; }
+        .tag-neutral { background: #95a5a6; }
+
+        .modify-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .modify-btn:hover {
+            background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .modify-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 15px;
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detailed-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1a1a1a;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .reset-btn {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 25px 15px;
+                margin: 10px;
+            }
+            
+            .dashboard-title {
+                font-size: 24px;
+            }
+
+            .analysis-section {
+                grid-template-columns: 1fr;
+            }
+
+            .score-circle {
+                width: 150px;
+                height: 150px;
+                font-size: 2.5rem;
+            }
+
+            .detailed-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="falling-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Vita Forge ATS Score Calculator</h1>
+            <p class="dashboard-subtitle">Advanced Resume Analysis for Maximum ATS Compatibility</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section" id="uploadSection">
+                <h3>📄 Upload Your Resume</h3>
+                <p style="margin: 15px 0; color: #666;">Supported formats: PDF, DOCX, TXT (Max 5MB)</p>
+                <input type="file" id="fileInput" class="file-input" accept=".pdf,.docx,.txt" />
+                <button class="file-input-btn" onclick="document.getElementById('fileInput').click()">
+                    📁 Choose Resume File
+                </button>
+                <div id="fileInfo" class="file-info"></div>
+                <div id="errorMessage" class="error-message"></div>
+                <div id="processingMessage" class="processing-message"></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <button class="reset-btn" id="resetBtn" style="display: none;" onclick="resetApp()">
+                    🔄 Upload Different File
+                </button>
+            </div>
+
+            <div class="analysis-section" id="analysisSection">
+                <div class="card score-display">
+                    <h3>🎯 Your ATS Compatibility Score</h3>
+                    <div class="score-circle" id="scoreCircle">
+                        <span id="scoreValue">0</span>
+                    </div>
+                    <p id="scoreDescription">Upload your resume to get detailed analysis</p>
+                    
+                    <div class="detailed-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="keywordScore">0</div>
+                            <div class="stat-label">Keywords</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="structureScore">0</div>
+                            <div class="stat-label">Structure</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="readabilityScore">0</div>
+                            <div class="stat-label">Readability</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="completenessScore">0</div>
+                            <div class="stat-label">Completeness</div>
+                        </div>
+                    </div>
+                    <button class="reset-btn" onclick="resetApp()">🔄 Analyze Another Resume</button>
+                </div>
+
+                <div class="card">
+                    <h3>🔑 Keywords Analysis</h3>
+                    <div style="margin-bottom: 15px;">
+                        <h4 style="color: #27ae60; margin: 10px 0;">✅ Found Keywords (<span id="foundCount">0</span>)</h4>
+                        <ul id="foundKeywords" class="keywords-list"></ul>
+                    </div>
+                    <div>
+                        <h4 style="color: #e74c3c; margin: 10px 0;">❌ Missing High-Impact Keywords (<span id="missingCount">0</span>)</h4>
+                        <ul id="missingKeywords" class="keywords-list"></ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>🔍 Content Quality Analysis</h3>
+                    <ul id="grammarIssues" class="grammar-list"></ul>
+                </div>
+
+                <div class="card">
+                    <h3>🚀 AI-Powered Recommendations</h3>
+                    <ul id="aiRecommendations" class="recommendations-list"></ul>
+                    <button class="modify-btn" id="modifyBtn">
+                        ✨ Download Optimized Resume
+                    </button>
+                    <div class="success-message" id="successMessage">
+                        🎉 Optimized resume generated successfully!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Enhanced ATS keywords database with industry-specific terms
+        const atsKeywords = {
+            technical: [
+                {keyword: 'Python', weight: 5, category: 'Programming', industry: 'tech'},
+                {keyword: 'JavaScript', weight: 5, category: 'Programming', industry: 'tech'},
+                {keyword: 'Java', weight: 4, category: 'Programming', industry: 'tech'},
+                {keyword: 'React', weight: 5, category: 'Frontend', industry: 'tech'},
+                {keyword: 'Node.js', weight: 4, category: 'Backend', industry: 'tech'},
+                {keyword: 'SQL', weight: 5, category: 'Database', industry: 'tech'},
+                {keyword: 'AWS', weight: 5, category: 'Cloud', industry: 'tech'},
+                {keyword: 'Docker', weight: 4, category: 'DevOps', industry: 'tech'},
+                {keyword: 'Machine Learning', weight: 5, category: 'AI/ML', industry: 'tech'},
+                {keyword: 'Artificial Intelligence', weight: 4, category: 'AI/ML', industry: 'tech'},
+                {keyword: 'Data Science', weight: 5, category: 'Data', industry: 'tech'},
+                {keyword: 'Agile', weight: 4, category: 'Methodology', industry: 'tech'},
+                {keyword: 'Scrum', weight: 3, category: 'Methodology', industry: 'tech'},
+                {keyword: 'CI/CD', weight: 4, category: 'DevOps', industry: 'tech'},
+                {keyword: 'Angular', weight: 4, category: 'Frontend', industry: 'tech'},
+                {keyword: 'Vue.js', weight: 4, category: 'Frontend', industry: 'tech'},
+                {keyword: 'MongoDB', weight: 3, category: 'Database', industry: 'tech'},
+                {keyword: 'PostgreSQL', weight: 4, category: 'Database', industry: 'tech'},
+                {keyword: 'REST API', weight: 4, category: 'Backend', industry: 'tech'},
+                {keyword: 'GraphQL', weight: 3, category: 'Backend', industry: 'tech'}
+            ],
+            soft: [
+                {keyword: 'Leadership', weight: 5, category: 'Management', industry: 'universal'},
+                {keyword: 'Communication', weight: 5, category: 'Interpersonal', industry: 'universal'},
+                {keyword: 'Problem-solving', weight: 4, category: 'Analytical', industry: 'universal'},
+                {keyword: 'Team collaboration', weight: 4, category: 'Teamwork', industry: 'universal'},
+                {keyword: 'Project management', weight: 5, category: 'Management', industry: 'universal'},
+                {keyword: 'Critical thinking', weight: 4, category: 'Analytical', industry: 'universal'},
+                {keyword: 'Time management', weight: 3, category: 'Organization', industry: 'universal'},
+                {keyword: 'Adaptability', weight: 4, category: 'Personal', industry: 'universal'},
+                {keyword: 'Innovation', weight: 4, category: 'Creative', industry: 'universal'},
+                {keyword: 'Strategic thinking', weight: 4, category: 'Strategic', industry: 'universal'}
+            ],
+            business: [
+                {keyword: 'Strategic planning', weight: 4, category: 'Strategy', industry: 'business'},
+                {keyword: 'Budget management', weight: 4, category: 'Finance', industry: 'business'},
+                {keyword: 'Stakeholder management', weight: 4, category: 'Relations', industry: 'business'},
+                {keyword: 'Process improvement', weight: 4, category: 'Operations', industry: 'business'},
+                {keyword: 'Data analysis', weight: 5, category: 'Analytics', industry: 'universal'},
+                {keyword: 'Market research', weight: 3, category: 'Research', industry: 'business'},
+                {keyword: 'Customer service', weight: 4, category: 'Service', industry: 'universal'},
+                {keyword: 'Sales', weight: 4, category: 'Revenue', industry: 'business'},
+                {keyword: 'Marketing', weight: 4, category: 'Marketing', industry: 'business'},
+                {keyword: 'Business development', weight: 4, category: 'Growth', industry: 'business'}
+            ],
+            education: [
+                {keyword: 'Bachelor', weight: 3, category: 'Degree', industry: 'universal'},
+                {keyword: 'Master', weight: 4, category: 'Degree', industry: 'universal'},
+                {keyword: 'PhD', weight: 4, category: 'Degree', industry: 'academic'},
+                {keyword: 'Certification', weight: 3, category: 'Credential', industry: 'universal'},
+                {keyword: 'Training', weight: 3, category: 'Development', industry: 'universal'},
+                {keyword: 'Degree', weight: 3, category: 'Education', industry: 'universal'}
+            ]
+        };
+
+        // Advanced grammar and content analysis patterns
+        const analysisPatterns = {
+            grammar: [
+                {pattern: /\bi\s/gi, message: 'Use "I" instead of "i" in sentences', severity: 'medium'},
+                {pattern: /\s{2,}/g, message: 'Multiple spaces detected - use single spaces', severity: 'low'},
+                {pattern: /[.!?]\s*[a-z]/g, message: 'Sentences should start with capital letters', severity: 'medium'},
+                {pattern: /\s+[.!?,]/g, message: 'Remove spaces before punctuation', severity: 'low'},
+                {pattern: /\bteh\b/gi, message: 'Spelling error: "teh" should be "the"', severity: 'high'},
+                {pattern: /\band\s+and\b/gi, message: 'Duplicate "and" detected', severity: 'medium'},
+                {pattern: /\brecieve\b/gi, message: 'Spelling error: "recieve" should be "receive"', severity: 'high'},
+                {pattern: /\baccomplihsed\b/gi, message: 'Spelling error: "accomplihsed" should be "accomplished"', severity: 'high'}
+            ],
+            style: [
+                {pattern: /(was|were)\s+\w+ed\b/g, message: 'Consider changing from passive to active voice', severity: 'medium'},
+                {pattern: /\bvery\s+/gi, message: 'Avoid weak intensifiers like "very"', severity: 'low'},
+                {pattern: /\breally\s+/gi, message: 'Remove filler words like "really"', severity: 'low'},
+                {pattern: /\bbasically\s+/gi, message: 'Remove filler words like "basically"', severity: 'low'},
+                {pattern: /\bresponsible for\b/gi, message: 'Use stronger action verbs instead of "responsible for"', severity: 'medium'}
+            ],
+            structure: [
+                {pattern: /\b(led|managed|developed|created|implemented|designed|built|improved|achieved|delivered|optimized)\b/gi, message: 'Strong action verbs found', severity: 'positive'},
+                {pattern: /\b\d+%\b/g, message: 'Quantifiable achievements found', severity: 'positive'},
+                {pattern: /\$[\d,]+/g, message: 'Financial metrics found', severity: 'positive'},
+                {pattern: /\b(increased|reduced|saved|improved|grew)\s+by\s+\d+/gi, message: 'Impact metrics found', severity: 'positive'}
+            ]
+        };
+
+        let currentFileContent = '';
+        let currentFileName = '';
+        let currentAnalysis = {};
+
+        // Event listeners
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        document.getElementById('modifyBtn').addEventListener('click', generateOptimizedResume);
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showProcessing(message) {
+            const processingDiv = document.getElementById('processingMessage');
+            processingDiv.textContent = message;
+            processingDiv.style.display = 'block';
+        }
+
+        function hideProcessing() {
+            document.getElementById('processingMessage').style.display = 'none';
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Reset previous state
+            resetProgressAndMessages();
+
+            // Validate file
+            if (file.size > 5 * 1024 * 1024) {
+                showError('File size must be less than 5MB');
+                return;
+            }
+
+            const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+            if (!validTypes.includes(file.type) && !file.name.toLowerCase().match(/\.(pdf|docx|txt)$/)) {
+                showError('Please upload a PDF, DOCX, or TXT file');
+                return;
+            }
+
+            currentFileName = file.name;
+            displayFileInfo(file);
+            showProcessing('Processing your resume...');
+            simulateProgress();
+
+            try {
+                currentFileContent = await extractText(file);
+                
+                if (!currentFileContent || currentFileContent.trim().length === 0) {
+                    throw new Error('No text content could be extracted from the file');
+                }
+
+                // Simulate processing time for better UX
+                setTimeout(() => {
+                    hideProcessing();
+                    currentAnalysis = analyzeResume(currentFileContent);
+                    displayResults(currentAnalysis);
+                    showAnalysisSection();
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error processing file:', error);
+                hideProcessing();
+                showError(`Error processing file: ${error.message}`);
+            }
+        }
+        function resetProgressAndMessages() {
+            document.getElementById('fileInfo').textContent = '';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('processingMessage').style.display = 'none';
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('resetBtn').style.display = 'none';
+        }
+        function displayFileInfo(file) {
+            const fileInfoDiv = document.getElementById('fileInfo');
+            fileInfoDiv.textContent = `File: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+            fileInfoDiv.style.display = 'block';
+        }
+        function simulateProgress() {
+            const progressFill = document.getElementById('progressFill');
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                } else {
+                    width += 10;
+                    progressFill.style.width = width + '%';
+                }
+            }, 300);
+        }
+        async function extractText(file) {
+            if (file.type === 'application/pdf') {
+                return await extractTextFromPDF(file);
+            } else if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                return await extractTextFromDOCX(file);
+            } else if (file.type === 'text/plain') {
+                return await extractTextFromTXT(file);
+            }
+            throw new Error('Unsupported file type');
+        }
+        async function extractTextFromPDF(file) {
+            const pdf = await pdfjsLib.getDocument({ url: URL.createObjectURL(file) }).promise;
+            let text = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(item => item.str).join(' ') + ' ';
+            }
+            return text.trim();
+        }
+        async function extractTextFromDOCX(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            return result.value.trim();
+        }
+        async function extractTextFromTXT(file) {
+            const text = await file.text();
+            return text.trim();
+        }
+        function analyzeResume(content) {
+            const analysis = {
+                keywords: { found: [], missing: [] },
+                grammarIssues: [],
+                aiRecommendations: [],
+                score: 0,
+                detailedStats: {
+                    keywordScore: 0,
+                    structureScore: 0,
+                    readabilityScore: 0,
+                    completenessScore: 0
+                }
+            };
+
+            // Keyword analysis
+            const foundKeywords = [];
+            const missingKeywords = [];
+            for (const category in atsKeywords) {
+                atsKeywords[category].forEach(item => {
+                    if (content.toLowerCase().includes(item.keyword.toLowerCase())) {
+                        foundKeywords.push({ keyword: item.keyword, weight: item.weight, category: item.category });
+                    } else {
+                        missingKeywords.push({ keyword: item.keyword, weight: item.weight, category: item.category });
+                    }
+                });
+            }
+            analysis.keywords.found = foundKeywords;
+            analysis.keywords.missing = missingKeywords;
+
+            // Grammar and style analysis
+            analysis.grammarIssues = analyzeContent(content);
+
+            // AI recommendations
+            analysis.aiRecommendations = generateAIRecommendations(analysis);
+
+            // Calculate scores
+            analysis.score = calculateScore(analysis);
+            analysis.detailedStats.keywordScore = calculateKeywordScore(analysis.keywords.found);
+            analysis.detailedStats.structureScore = calculateStructureScore(analysis.grammarIssues);
+            analysis.detailedStats.readabilityScore = calculateReadabilityScore(content);
+            analysis.detailedStats.completenessScore = calculateCompletenessScore(content);
+
+            return analysis;
+        }
+        function analyzeContent(content) {
+            const issues = [];
+            analysisPatterns.grammar.forEach(pattern => {
+                const matches = content.match(pattern.pattern);
+                if (matches) {
+                    matches.forEach(match => {
+                        issues.push({ message: pattern.message, severity: pattern.severity, match });
+                    });
+                }
+            });
+            analysisPatterns.style.forEach(pattern => {
+                const matches = content.match(pattern.pattern);
+                if (matches) {
+                    matches.forEach(match => {
+                        issues.push({ message: pattern.message, severity: pattern.severity, match });
+                    });
+                }
+            });
+            analysisPatterns.structure.forEach(pattern => {
+                const matches = content.match(pattern.pattern);
+                if (matches) {
+                    matches.forEach(match => {
+                        issues.push({ message: pattern.message, severity: pattern.severity, match });
+                    });
+                }
+            });
+            return issues;
+        }
+        function generateAIRecommendations(analysis) {
+            const recommendations = [];
+            if (analysis.keywords.missing.length > 0) {
+                recommendations.push('Consider adding the following high-impact keywords: ' + analysis.keywords.missing.map(k => k.keyword).join(', '));
+            }
+            if (analysis.grammarIssues.length > 0) {
+                recommendations.push('Review the following grammar issues: ' + analysis.grammarIssues.map(i => i.message).join(', '));
+            }
+            recommendations.push('Ensure your resume is tailored to the job description for better ATS compatibility.');
+            return recommendations;
+        }
+        function calculateScore(analysis) {
+            const keywordScore = analysis.detailedStats.keywordScore;
+            const structureScore = analysis.detailedStats.structureScore;
+            const readabilityScore = analysis.detailedStats.readabilityScore;
+            const completenessScore = analysis.detailedStats.completenessScore;
+
+            return Math.round((keywordScore + structureScore + readabilityScore + completenessScore) / 4);
+        }
+        function calculateKeywordScore(foundKeywords) {
+            if (foundKeywords.length === 0) return 0;
+            const totalWeight = foundKeywords.reduce((sum, k) => sum + k.weight, 0);
+            return Math.round((totalWeight / (atsKeywords.technical.length + atsKeywords.soft.length + atsKeywords.business.length + atsKeywords.education.length)) * 100);
+        }
+        function calculateStructureScore(issues) {
+            const totalIssues = issues.length;
+            if (totalIssues === 0) return 100;
+            const severityWeights = { low: 1, medium: 2, high: 3, positive: -1 };
+            const totalSeverity = issues.reduce((sum, issue) => sum + severityWeights[issue.severity], 0);
+            return Math.max(0, Math.min(100, 100 - (totalSeverity / totalIssues * 10)));
+        }
+        function calculateReadabilityScore(content) {
+            const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 0);
+            const words = content.split(/\s+/).filter(w => w.trim().length > 0);
+            const syllables = words.reduce((count, word) => count + countSyllables(word), 0);
+
+            if (sentences.length === 0 || words.length === 0) return 0;
+
+            const avgWordsPerSentence = words.length / sentences.length;
+            const avgSyllablesPerWord = syllables / words.length;
+
+            // Flesch Reading Ease formula
+            return Math.round(206.835 - (1.015 * avgWordsPerSentence) - (84.6 * avgSyllablesPerWord));
+        }
+        function countSyllables(word) {
+            word = word.toLowerCase();
+            if (word.length <= 3) return 1; // Short words have at least one syllable
+            const matches = word.match(/[aeiouy]{1,2}/g);
+            return matches ? matches.length : 1; // Count vowel groups as syllables
+        }
+        function calculateCompletenessScore(content) {
+            const requiredSections = ['Contact Information', 'Summary', 'Work Experience', 'Education', 'Skills'];
+            const presentSections = requiredSections.filter(section => content.toLowerCase().includes(section.toLowerCase()));
+            return Math.round((presentSections.length / requiredSections.length) * 100);
+        }
+        function displayResults(analysis) {
+            // Display ATS score
+            const scoreCircle = document.getElementById('scoreCircle');
+            const scoreValue = document.getElementById('scoreValue');
+            const scoreDescription = document.getElementById('scoreDescription');
+            scoreValue.textContent = analysis.score;
+            scoreCircle.className = 'score-circle ' + (analysis.score >= 80 ? 'score-high' : analysis.score >= 50 ? 'score-medium' : 'score-low');
+            scoreDescription.textContent = getScoreDescription(analysis.score);
+            scoreDescription.style.color = analysis.score >= 80 ? '#27ae60' : analysis.score >= 50 ? '#f39c12' : '#e74c3c';
+            document.getElementById('keywordScore').textContent = analysis.detailedStats.keywordScore;
+            document.getElementById('structureScore').textContent = analysis.detailedStats.structureScore;
+            document.getElementById('readabilityScore').textContent = analysis.detailedStats.readabilityScore;
+            document.getElementById('completenessScore').textContent = analysis.detailedStats.completenessScore;
+            document.getElementById('foundCount').textContent = analysis.keywords.found.length;
+            document.getElementById('missingCount').textContent = analysis.keywords.missing.length;
+            displayKeywords(analysis.keywords.found, 'foundKeywords', 'keyword-found');
+            displayKeywords(analysis.keywords.missing, 'missingKeywords', 'keyword-missing');
+            displayGrammarIssues(analysis.grammarIssues);
+            displayAIRecommendations(analysis.aiRecommendations);
+            document.getElementById('resetBtn').style.display = 'block';
+        }
+        function getScoreDescription(score) {
+            if (score >= 80) return 'Excellent ATS compatibility! Your resume is well-optimized.';
+            if (score >= 50) return 'Good ATS compatibility. Consider improving some areas for better results.';
+            return 'Low ATS compatibility. Significant improvements needed to pass ATS filters.';
+        }
+        function displayKeywords(keywords, elementId, className) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = '';
+            keywords.forEach(k => {
+                const li = document.createElement('li');
+                li.textContent = `${k.keyword} (Weight: ${k.weight})`;
+                li.className = className;
+                list.appendChild(li);
+            });
+        }
+        function displayGrammarIssues(issues) {
+            const list = document.getElementById('grammarIssues');
+            list.innerHTML = '';
+            issues.forEach(issue => {
+                const li = document.createElement('li');
+                li.textContent = issue.message;
+                li.className = 'grammar-error';
+                list.appendChild(li);
+            });
+        }
+        function displayAIRecommendations(recommendations) {
+            const list = document.getElementById('aiRecommendations');
+            list.innerHTML = '';
+            recommendations.forEach(rec => {
+                const li = document.createElement('li');
+                li.textContent = rec;
+                list.appendChild(li);
+            });
+        }
+        function showAnalysisSection() {
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('analysisSection').style.display = 'block';
+        }
+        function resetApp() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileInfo').textContent = '';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('processingMessage').style.display = 'none';
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('analysisSection').style.display = 'none';
+            document.getElementById('uploadSection').style.display = 'block';
+            currentFileContent = '';
+            currentFileName = '';
+            currentAnalysis = {};
+        }
+        function generateOptimizedResume() {
+            if (!currentFileContent || !currentFileName) {
+                showError('Please upload a resume file first.');
+                return;
+            }
+
+            showProcessing('Generating optimized resume...');
+
+            // Simulate resume optimization
+            setTimeout(() => {
+                hideProcessing();
+                document.getElementById('successMessage').style.display = 'block';
+                document.getElementById('successMessage').textContent = `Optimized resume generated successfully! Downloading ${currentFileName.replace(/\.[^/.]+$/, '')}_optimized.pdf...`;
+                
+                // Here you would implement the actual resume generation logic
+                // For now, we just simulate a success message
+            }, 2000);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('analysisSection').style.display = 'none';
+            document.getElementById('resetBtn').style.display = 'none';
+        });
+        
+        function validateATSFormatting(content) {
+    const validationResults = {
+        passed: [],
+        warnings: [],
+        errors: []
+    };
+    
+    // Check for ATS-friendly elements
+    const checks = [
+        {
+            test: () => !content.includes('│') && !content.includes('┌'),
+            pass: 'No table borders detected',
+            fail: 'Remove table borders - they can break ATS parsing',
+            type: 'error'
+        },
+        {
+            test: () => !content.match(/\.(jpg|png|gif)/i),
+            pass: 'No image references found',
+            fail: 'Remove image references - ATS cannot parse images',
+            type: 'warning'
+        },
+        {
+            test: () => content.includes('@') && content.includes('.com'),
+            pass: 'Email address detected',
+            fail: 'Add a clear email address',
+            type: 'error'
+        },
+        {
+            test: () => content.match(/\b\d{3}[-.]\d{3}[-.]\d{4}\b/),
+            pass: 'Phone number format detected',
+            fail: 'Add a properly formatted phone number',
+            type: 'warning'
+        }
+    ];
+    
+    checks.forEach(check => {
+        if (check.test()) {
+            validationResults.passed.push(check.pass);
+        } else {
+            validationResults[check.type === 'error' ? 'errors' : 'warnings'].push(check.fail);
+        }
+    });
+    
+    return validationResults;
+}
+function generateSmartRecommendations(analysis, jobDescription = '') {
+    const recommendations = [];
+    const { keywords, grammarIssues, achievements, compliance } = analysis;
+    
+    // Keyword recommendations
+    if (keywords.missing.length > 0) {
+        const topMissing = keywords.missing
+            .sort((a, b) => b.weight - a.weight)
+            .slice(0, 5);
+        
+        recommendations.push({
+            type: 'keywords',
+            priority: 'high',
+            message: `Add these high-impact keywords: ${topMissing.map(k => k.keyword).join(', ')}`,
+            action: 'Add relevant keywords naturally throughout your experience descriptions'
+        });
+    }
+    
+    // Achievement recommendations
+    if (achievements.length < 3) {
+        recommendations.push({
+            type: 'achievements',
+            priority: 'high',
+            message: 'Add more quantifiable achievements',
+            action: 'Include numbers, percentages, or dollar amounts to demonstrate impact'
+        });
+    }
+    
+    // Structure recommendations
+    if (compliance.missingSections.length > 0) {
+        recommendations.push({
+            type: 'structure',
+            priority: 'medium',
+            message: `Missing sections: ${compliance.missingSections.join(', ')}`,
+            action: 'Add the missing sections to improve ATS parsing'
+        });
+    }
+    
+    return recommendations;
+}
+function detectQuantifiableAchievements(content) {
+    const patterns = [
+        /\b\d+%\b/g,                           // Percentages
+        /\$[\d,]+(?:\.\d{2})?\b/g,            // Dollar amounts
+        /\b\d+(?:,\d{3})*\s*(?:users|customers|clients|employees)\b/gi, // User counts
+        /\b(?:increased|improved|reduced|saved|grew|boosted)\s+(?:by\s+)?\d+/gi, // Improvements
+        /\b\d+\s*(?:hours?|days?|weeks?|months?|years?)\b/gi, // Time periods
+    ];
+    
+    const achievements = [];
+    patterns.forEach((pattern, index) => {
+        const matches = content.match(pattern) || [];
+        matches.forEach(match => {
+            achievements.push({
+                type: ['percentage', 'financial', 'volume', 'improvement', 'timeframe'][index],
+                value: match,
+                weight: [5, 5, 4, 5, 3][index]
+            });
+        });
+    });
+    
+    return achievements;
+}
+const strongActionVerbs = [
+    'achieved', 'advanced', 'analyzed', 'architected', 'automated',
+    'built', 'collaborated', 'created', 'delivered', 'designed',
+    'developed', 'enhanced', 'executed', 'generated', 'implemented',
+    'improved', 'increased', 'initiated', 'launched', 'led',
+    'managed', 'optimized', 'orchestrated', 'pioneered', 'reduced',
+    'resolved', 'spearheaded', 'streamlined', 'transformed'
+];
+
+function analyzeActionVerbs(content) {
+    const sentences = content.split(/[.!?]+/).filter(s => s.trim());
+    const verbAnalysis = {
+        strongVerbs: 0,
+        weakVerbs: 0,
+        passiveVoice: 0,
+        recommendations: []
+    };
+    
+    sentences.forEach(sentence => {
+        const hasStrongVerb = strongActionVerbs.some(verb => 
+            sentence.toLowerCase().includes(verb)
+        );
+        
+        if (hasStrongVerb) {
+            verbAnalysis.strongVerbs++;
+        } else if (sentence.match(/\b(was|were|had|have|has)\s+\w+ed\b/)) {
+            verbAnalysis.passiveVoice++;
+        } else {
+            verbAnalysis.weakVerbs++;
+        }
+    });
+    
+    return verbAnalysis;
+}
+        function generateOptimizedResume() {
+            if (!currentFileContent || !currentFileName) {
+                showError('Please upload a resume file first.');
+                return;
+            }
+
+            showProcessing('Generating optimized resume...');
+
+            // Simulate resume optimization
+            setTimeout(() => {
+                hideProcessing();
+                document.getElementById('successMessage').style.display = 'block';
+                document.getElementById('successMessage').textContent = `Optimized resume generated successfully! Downloading ${currentFileName.replace(/\.[^/.]+$/, '')}_optimized.pdf...`;
+                
+                // Here you would implement the actual resume generation logic
+                // For now, we just simulate a success message
+            }, 2000);
+        }
+        </script>
+        </body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vita Forge - Resume & Portfolio</title>
+  <style>
+    * {margin:0; padding:0; box-sizing:border-box;}
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      color: #1a1a1a;
+    }
+    .falling-dots {
+      position: fixed;
+      top:0; left:0; width:100%; height:100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .dot {
+      position: absolute;
+      width: 10px; height: 10px;
+      background-color: #2a2a2a;
+      border-radius: 50%;
+      opacity: 0.6;
+      animation: leftToRightFall linear infinite;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    @keyframes leftToRightFall {
+      0% {transform: translate(-20px, -20px) rotate(0deg); opacity: 0; box-shadow: 0 0 5px rgba(0,0,0,0.2);}
+      5% {opacity: 0.7;}
+      95% {opacity: 0.7; box-shadow: 0 0 8px rgba(0,0,0,0.3);}
+      100% {transform: translate(120vw,120vh) rotate(360deg); opacity: 0; box-shadow: 0 0 12px rgba(0,0,0,0.2);}
+    }
+    .dot:nth-child(1) { left: -5%; animation-duration: 12s; animation-delay: 0s; width:8px; height:8px; background-color: #1a1a1a;}
+    .dot:nth-child(2) { left: -10%; animation-duration: 15s; animation-delay: 2s; width:12px; height:12px; background-color: #3a3a3a;}
+    .dot:nth-child(3) { left: -15%; animation-duration: 10s; animation-delay: 4s; width:6px; height:6px; background-color: #0a0a0a;}
+    .dot:nth-child(4) { left: -20%; animation-duration: 18s; animation-delay: 1s; width:14px; height:14px; background-color: #2a2a2a;}
+    .dot:nth-child(5) { left: -25%; animation-duration: 13s; animation-delay: 6s; width:9px; height:9px; background-color: #1a1a1a;}
+    .dot:nth-child(6) { left: -30%; animation-duration: 16s; animation-delay: 3s; width:11px; height:11px; background-color: #3a3a3a;}
+    .dot:nth-child(7) { left: -35%; animation-duration: 14s; animation-delay: 7s; width:7px; height:7px; background-color: #0a0a0a;}
+    .dot:nth-child(8) { left: -40%; animation-duration: 20s; animation-delay: 5s; width:15px; height:15px; background-color: #2a2a2a;}
+    .dot:nth-child(9) { left: -45%; animation-duration: 11s; animation-delay: 8s; width:8px; height:8px; background-color: #1a1a1a;}
+    .dot:nth-child(10){ left: -50%; animation-duration: 17s; animation-delay: 4.5s; width:10px; height:10px; background-color: #3a3a3a;}
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      position: relative;
+      z-index: 10;
+    }
+    .header { text-align: center; padding: 80px 0 60px; color: #1a1a1a;}
+    .profile-image {
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      margin: 0 auto 30px;
+      background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+      display: flex;
+      align-items: center; justify-content: center;
+      font-size: 60px; font-weight: bold;
+      color: white;
+      box-shadow: 0 15px 35px rgba(26,26,26,0.3);
+      animation: profilePulse 3s ease-in-out infinite;
+    }
+    @keyframes profilePulse {
+      0%, 100% {transform: scale(1);}
+      50% {transform: scale(1.05);}
+    }
+    .header h1 {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 4px rgba(255,255,255,0.8);
+    }
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 80px;
+    }
+    .download-card {
+      background: rgba(255,255,255,0.3);
+      backdrop-filter: blur(20px);
+      border-radius: 25px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+      border: 1px solid rgba(0,0,0,0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: slideUp 0.6s ease-out;
+    }
+    .download-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.15);
+      background: rgba(255,255,255,0.4);
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(50px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .card-icon {
+      width: 80px; height: 80px;
+      margin: 0 auto 25px;
+      background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 35px;
+      box-shadow: 0 10px 30px rgba(26,26,26,0.3);
+    }
+    .download-card h2 {
+      font-size: 28px; font-weight: 700; color: #1a1a1a;
+      margin-bottom: 15px; text-shadow: 0 1px 1px rgba(255,255,255,0.8);
+    }
+    .download-card p {
+      font-size: 16px; color: #333333; margin-bottom: 30px;
+      line-height: 1.6; text-shadow: 0 1px 1px rgba(255,255,255,0.8);
+    }
+    .email-form { margin-bottom: 25px;}
+    .email-input {
+      width: 100%; padding: 15px 20px;
+      border: 1px solid rgba(0,0,0,0.3);
+      border-radius: 12px;
+      font-size: 16px; margin-bottom: 15px;
+      transition: all 0.3s ease;
+      background: rgba(255,255,255,0.6);
+      color: #1a1a1a;
+      backdrop-filter: blur(3px);
+    }
+    .email-input:focus {
+      outline: none; border-color: #1a1a1a;
+      background: rgba(255,255,255,0.8);
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.2);
+      transform: translateY(-1px);
+    }
+    .email-input::placeholder { color: #666666;}
+    .download-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+      color: white; border: none;
+      padding: 16px 30px; border-radius: 12px;
+      font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s ease;
+      text-transform: uppercase; letter-spacing: 1px;
+      position: relative; overflow: hidden;
+    }
+    .download-btn:before {
+      content: '';
+      position: absolute; top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(26,26,26,0.4);
+      background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
+    }
+    .download-btn:hover:before { left: 100%;}
+    .download-btn:disabled {
+      opacity: 0.6; cursor: not-allowed; transform: none;
+    }
+    .success-message {
+      background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+      color: white; padding: 15px; border-radius: 10px;
+      margin-top: 15px; display: none;
+      animation: fadeInUp 0.5s ease-out;
+    }
+    @keyframes fadeInUp {
+      from { opacity:0; transform: translateY(20px);}
+      to   { opacity:1; transform: translateY(0);}
+    }
+    .file-info {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(247,250,252,0.6);
+      padding: 12px 20px; border-radius: 8px;
+      margin-top: 15px; font-size: 14px; color: #1a1a1a;
+      backdrop-filter: blur(3px);
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .file-size { font-weight: 600;}
+    .footer {
+      text-align: center;
+      padding: 40px 0;
+      color: #333333;
+    }
+    .footer p { text-shadow:0 1px 1px rgba(255,255,255,0.8);}
+    @media (max-width:768px) {
+      .header h1 {font-size:36px;}
+      .main-content {grid-template-columns:1fr; gap:30px;}
+      .download-card {padding:30px 20px;}
+      .profile-image {width:120px; height:120px; font-size:48px;}
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated dots -->
+  <div class="falling-dots">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+
+
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="profile-image">VF</div>
+      <h1>Vita Forge</h1>
+    </header>
+
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Resume Send Card -->
+      <div class="download-card">
+        <div class="card-icon">📄</div>
+        <h2>Send Resume</h2>
+        <p>Get my latest resume with detailed work experience, technical skills, and professional achievements. Perfect for HR teams and recruiters.</p>
+        <form class="email-form" id="resumeForm">
+          <input
+            type="email"
+            class="email-input"
+            placeholder="Enter your email address"
+            required
+            id="resumeEmail"
+          >
+          <button type="submit" class="download-btn">
+            📧 Send Resume
+          </button>
+        </form>
+        <div class="file-info">
+          <span>Resume_VitaForge_2025.pdf</span>
+          <span class="file-size">1.2 MB</span>
+        </div>
+        <div class="success-message" id="resumeSuccess">
+          ✅ Successfully sent resume!
+        </div>
+      </div>
+
+
+      <!-- Portfolio Send Card -->
+      <div class="download-card">
+        <div class="card-icon">🎨</div>
+        <h2>Send Portfolio</h2>
+        <p>Explore my complete project portfolio including web applications, mobile apps, and design work. Showcasing 5+ years of development experience.</p>
+        <form class="email-form" id="portfolioForm">
+            <input
+              type="email"
+              class="email-input"
+              placeholder="Enter your email address"
+              required
+              id="portfolioEmail"
+            >
+            <button type="submit" class="download-btn">
+              📧 Send Portfolio
+            </button>
+        </form>
+        <div class="file-info">
+          <span>Portfolio_VitaForge_2025.pdf</span>
+          <span class="file-size">8.5 MB</span>
+        </div>
+        <div class="success-message" id="portfolioSuccess">
+          ✅ Successfully sent portfolio!
+        </div>
+      </div>
+    </main>
+
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p style="margin-top: 20px; font-size: 14px; opacity: 0.7;">
+        © 2025 Vita Forge. All rights reserved.
+      </p>
+    </footer>
+  </div>
+
+
+  <script>
+    // Resume Send Handler
+    document.getElementById('resumeForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      document.getElementById('resumeSuccess').style.display = "block";
+      setTimeout(function(){
+        document.getElementById('resumeSuccess').style.display = "none";
+      },4000);
+    });
+    // Portfolio Send Handler
+    document.getElementById('portfolioForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      document.getElementById('portfolioSuccess').style.display = "block";
+      setTimeout(function(){
+        document.getElementById('portfolioSuccess').style.display = "none";
+      },4000);
+    });
+  </script>
+</body>
+</html>
+
+
+
